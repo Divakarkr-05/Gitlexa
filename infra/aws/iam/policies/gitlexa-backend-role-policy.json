@@ -1,0 +1,89 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BedrockModelInvocation",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:<AWS_REGION>::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0",
+        "arn:aws:bedrock:<AWS_REGION>::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
+        "arn:aws:bedrock:<AWS_REGION>::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+      ]
+    },
+    {
+      "Sid": "BedrockGetFoundationModelDetails",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:GetFoundationModel"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:<AWS_REGION>::foundation-model/anthropic.claude-*"
+      ]
+    },
+    {
+      "Sid": "BedrockListFoundationModelsNoResourceLevelSupport",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:ListFoundationModels"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsManagerGitlexaReadAccess",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:gitlexa/*"
+    },
+    {
+      "Sid": "KMSDecryptForSecretsManager",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt"
+      ],
+      "Resource": "arn:aws:kms:<AWS_REGION>:<AWS_ACCOUNT_ID>:key/<KMS_KEY_ID>",
+      "Condition": {
+        "StringEquals": {
+          "kms:ViaService": "secretsmanager.<AWS_REGION>.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "CloudWatchLogGroupManagement",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup"
+      ],
+      "Resource": "arn:aws:logs:<AWS_REGION>:<AWS_ACCOUNT_ID>:log-group:/gitlexa/*"
+    },
+    {
+      "Sid": "CloudWatchLogStreamWriteEvents",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:DescribeLogStreams",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:<AWS_REGION>:<AWS_ACCOUNT_ID>:log-group:/gitlexa/*:log-stream:*"
+    },
+    {
+      "Sid": "CloudWatchApplicationMetricsNoResourceLevelSupport",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricData"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "cloudwatch:namespace": "Gitlexa"
+        }
+      }
+    }
+  ]
+}
