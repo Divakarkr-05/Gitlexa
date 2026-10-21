@@ -1,5 +1,6 @@
-// Frontend Analysis service client skeleton. Owned by Member 04.
+import { postJson } from './api';
+import type { AnalysisResponse } from '../types';
 
-export async function runAnalysis(_projectId: string): Promise<{ analysis_id: string }> {
-  throw new Error("runAnalysis not implemented yet - Member 04");
+export function runAnalysis(projectId: string): Promise<AnalysisResponse> {
+  return postJson<AnalysisResponse, { project_id: string }>('/analysis/run', { project_id: projectId });
 }
