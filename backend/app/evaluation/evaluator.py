@@ -69,3 +69,4 @@ class InvestigationEvaluator:
             "metrics": metrics,
             "grounded": metrics["evidence_grounding"] == 1.0,
         }
+# CI validation
