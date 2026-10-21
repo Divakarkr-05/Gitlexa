@@ -36,11 +36,11 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: Optional[SecretStr] = None
 
     # AWS & Amazon Bedrock Configuration
-    AWS_REGION: str = "us-east-1"
+    AWS_REGION: str = "ap-southeast-2"
     AWS_ACCESS_KEY_ID: Optional[SecretStr] = None
     AWS_SECRET_ACCESS_KEY: Optional[SecretStr] = None
-    BEDROCK_MODEL_ID: str = "anthropic.claude-3-sonnet-20240229-v1:0"
-
+    BEDROCK_MODEL_ID: str = "amazon.nova-micro-v1:0"
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
