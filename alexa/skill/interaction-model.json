@@ -1,0 +1,17 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "gitlexa",
+      "intents": [
+        {
+          "name": "CheckRepoHealthIntent",
+          "samples": [
+            "what is the repo status",
+            "are there any blockers",
+            "check repo health"
+          ]
+        }
+      ]
+    }
+  }
+}

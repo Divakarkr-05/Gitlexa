@@ -1,0 +1,1 @@
+# Severity & impact scoring algorithms

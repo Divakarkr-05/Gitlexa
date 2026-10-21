@@ -1,0 +1,1 @@
+# MCP Transport (stdio / SSE)
