@@ -34,7 +34,7 @@ class InvestigationEvaluator:
             for diagnosis in diagnoses
         ]
 
-        passed = all(
+        passed = bool(results) and all(
             result["grounded"]
             and result["metrics"]["evidence_grounding"] >= 0.90
             and result["confidence"] >= 0.70
@@ -49,11 +49,14 @@ class InvestigationEvaluator:
             "passed": passed,
             "results": results,
         }
+
     @staticmethod
     def _evaluate_diagnosis(
         diagnosis: BlockerDiagnosis,
         bundle: EvidenceBundle,
     ) -> dict:
+        """Evaluate one blocker diagnosis."""
+
         metrics = EvaluationMetrics.evaluate(
             diagnosis,
             bundle,
@@ -66,20 +69,3 @@ class InvestigationEvaluator:
             "metrics": metrics,
             "grounded": metrics["evidence_grounding"] == 1.0,
         }
-        
-        
-        passed = all(
-            result["grounded"]
-            and result["metrics"]["evidence_grounding"] >= 0.90
-            and result["confidence"] >= 0.70
-            for result in results
-        )
-
-        return {
-            "repository": bundle.repository,
-            "evidence_count": len(bundle.evidence),
-            "correlation_count": len(correlations),
-            "diagnosis_count": len(diagnoses),
-            "passed": passed,
-            "results": results,
-        }   
