@@ -17,6 +17,7 @@ import Project from './pages/Project';
 import Settings from './pages/Settings';
 import AssistantExperience from './components/AssistantExperience';
 import type { AnalysisResponse, ProjectResponse } from './types';
+import { supabase, isSupabaseConfigured } from './services/supabase';
 
 type Page = 'dashboard' | 'project' | 'analysis' | 'settings';
 
@@ -40,7 +41,10 @@ export default function App() {
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
   const assistantWasOpen = useRef(false);
   const closeAssistant = useCallback(() => setAssistantOpen(false), []);
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut().catch(() => {});
+    }
     setHasAuthenticatedSession(false);
     setAssistantOpen(false);
     setProfileMenuOpen(false);
@@ -53,6 +57,24 @@ export default function App() {
     setRegisteredProject(project);
     setAnalysisResult(null);
     setAnalysisError('');
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setHasAuthenticatedSession(true);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasAuthenticatedSession(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -103,7 +125,7 @@ export default function App() {
   }, [profileMenuOpen]);
 
   if (!hasAuthenticatedSession) {
-    return <Login />;
+    return <Login onAuthenticated={() => setHasAuthenticatedSession(true)} />;
   }
 
   if (assistantOpen) {

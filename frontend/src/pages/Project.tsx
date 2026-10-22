@@ -15,6 +15,7 @@ export default function Project({ registeredProject, onProjectRegistered }: Proj
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [githubNotice, setGithubNotice] = useState('');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,6 +47,28 @@ export default function Project({ registeredProject, onProjectRegistered }: Proj
 
       <div className="project-content-grid">
         <section className="panel project-profile-panel">
+          <div className="panel-kicker"><span className="panel-kicker-line" /> GITHUB CONNECTION</div>
+          <div style={{ margin: '14px 0 20px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px', fontSize: '15px', color: '#e7ecf9' }}>GitHub App Integration</h3>
+                <p style={{ margin: 0, fontSize: '14px', color: '#929eb2' }}>Authorize repository telemetry via secure GitHub App.</p>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setGithubNotice('GitHub App connection will be configured through the backend service.')}
+              >
+                <Github size={15} /> Connect GitHub
+              </button>
+            </div>
+            {githubNotice && (
+              <p className="form-feedback success-feedback" style={{ marginTop: '10px' }} role="status">
+                <CheckCircle2 size={14} /> {githubNotice}
+              </p>
+            )}
+          </div>
+
           <div className="panel-kicker"><span className="panel-kicker-line" /> REGISTERED PROJECT</div>
           {registeredProject ? (
             <>
