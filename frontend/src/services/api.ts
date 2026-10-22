@@ -5,7 +5,7 @@ export interface HealthResponse {
 }
 
 export interface AuthStatusResponse {
-  authenticated: boolean;
+  configured: boolean;
   provider: string;
 }
 

@@ -9,18 +9,16 @@ import {
   LogOut,
   Settings as SettingsIcon,
   Sparkles,
-  UserRound,
 } from 'lucide-react';
 import Analysis from './pages/Analysis';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
-import Profile from './pages/Profile';
 import Project from './pages/Project';
 import Settings from './pages/Settings';
 import AssistantExperience from './components/AssistantExperience';
-import type { ProjectResponse } from './types';
+import type { AnalysisResponse, ProjectResponse } from './types';
 
-type Page = 'dashboard' | 'project' | 'analysis' | 'settings' | 'profile';
+type Page = 'dashboard' | 'project' | 'analysis' | 'settings';
 
 const navigation: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -31,25 +29,30 @@ const navigation: { id: Page; label: string; icon: typeof LayoutDashboard }[] = 
 
 export default function App() {
   const [page, setPage] = useState<Page>('dashboard');
-  const [demoSessionActive, setDemoSessionActive] = useState(false);
+  const [hasAuthenticatedSession, setHasAuthenticatedSession] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [registeredProject, setRegisteredProject] = useState<ProjectResponse | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(null);
+  const [analysisError, setAnalysisError] = useState('');
   const assistantTriggerRef = useRef<HTMLButtonElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
-  const profileMenuItemsRef = useRef<Array<HTMLButtonElement | null>>([]);
   const assistantWasOpen = useRef(false);
   const closeAssistant = useCallback(() => setAssistantOpen(false), []);
-  const startDemoSession = useCallback(() => {
-    setDemoSessionActive(true);
-    setPage('dashboard');
-  }, []);
   const signOut = useCallback(() => {
-    setDemoSessionActive(false);
+    setHasAuthenticatedSession(false);
     setAssistantOpen(false);
     setProfileMenuOpen(false);
+    setRegisteredProject(null);
+    setAnalysisResult(null);
+    setAnalysisError('');
     setPage('dashboard');
+  }, []);
+  const handleProjectRegistered = useCallback((project: ProjectResponse) => {
+    setRegisteredProject(project);
+    setAnalysisResult(null);
+    setAnalysisError('');
   }, []);
 
   useEffect(() => {
@@ -61,8 +64,6 @@ export default function App() {
 
   useEffect(() => {
     if (!profileMenuOpen) return;
-
-    profileMenuItemsRef.current[0]?.focus();
 
     const handlePointerDown = (event: PointerEvent) => {
       if (event.target instanceof Node && !profileMenuRef.current?.contains(event.target)) {
@@ -78,9 +79,7 @@ export default function App() {
       const menu = profileMenuRef.current?.querySelector('[role="menu"]');
       if (!(event.target instanceof Node) || !menu?.contains(event.target)) return;
 
-      const menuItems = profileMenuItemsRef.current.filter(
-        (item): item is HTMLButtonElement => item !== null,
-      );
+      const menuItems = Array.from(menu.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
       const currentIndex = menuItems.findIndex((item) => item === document.activeElement);
       if (currentIndex < 0) return;
 
@@ -103,12 +102,19 @@ export default function App() {
     };
   }, [profileMenuOpen]);
 
-  if (!demoSessionActive) {
-    return <Login onDemoAccess={startDemoSession} />;
+  if (!hasAuthenticatedSession) {
+    return <Login />;
   }
 
   if (assistantOpen) {
-    return <AssistantExperience onClose={closeAssistant} />;
+    return (
+      <AssistantExperience
+        analysisResult={analysisResult}
+        registeredProject={registeredProject}
+        analysisError={analysisError}
+        onClose={closeAssistant}
+      />
+    );
   }
 
   return (
@@ -158,7 +164,7 @@ export default function App() {
                 className="profile-trigger"
                 type="button"
                 ref={profileTriggerRef}
-                aria-label="Open demo profile menu"
+                aria-label="Open account menu"
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
                 aria-controls="profile-menu"
@@ -170,25 +176,15 @@ export default function App() {
                   }
                 }}
               >
-                <span className="profile-avatar-small" aria-hidden="true">DU</span>
+                <Activity className="profile-avatar-small" aria-hidden="true" />
                 <ChevronDown size={12} aria-hidden="true" />
               </button>
               {profileMenuOpen && (
-                <div className="profile-menu" id="profile-menu" role="menu" aria-label="Demo account">
+                <div className="profile-menu" id="profile-menu" role="menu" aria-label="Account">
                   <div className="profile-menu-heading" role="presentation">
-                    <strong>Demo User</strong>
-                    <span>DEMO SESSION</span>
+                    <strong>Account</strong>
                   </div>
                   <button
-                    ref={(element) => { profileMenuItemsRef.current[0] = element; }}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => { setPage('profile'); setProfileMenuOpen(false); }}
-                  >
-                    <UserRound size={15} aria-hidden="true" /> Profile
-                  </button>
-                  <button
-                    ref={(element) => { profileMenuItemsRef.current[1] = element; }}
                     type="button"
                     role="menuitem"
                     onClick={() => { setPage('settings'); setProfileMenuOpen(false); }}
@@ -196,7 +192,6 @@ export default function App() {
                     <SettingsIcon size={15} aria-hidden="true" /> Settings
                   </button>
                   <button
-                    ref={(element) => { profileMenuItemsRef.current[2] = element; }}
                     type="button"
                     role="menuitem"
                     onClick={signOut}
@@ -211,18 +206,30 @@ export default function App() {
       </header>
 
       <main id="main-content" className="main-content">
-        {page === 'dashboard' && <Dashboard onOpenAssistant={() => setAssistantOpen(true)} onNavigate={setPage} />}
+        {page === 'dashboard' && (
+          <Dashboard
+            onOpenAssistant={() => setAssistantOpen(true)}
+            onNavigate={setPage}
+            registeredProject={registeredProject}
+            analysisResult={analysisResult}
+          />
+        )}
         {page === 'project' && (
           <Project
             registeredProject={registeredProject}
-            onProjectRegistered={setRegisteredProject}
+            onProjectRegistered={handleProjectRegistered}
           />
         )}
         {page === 'analysis' && (
-          <Analysis registeredProject={registeredProject} onNavigateToProject={() => setPage('project')} />
+          <Analysis
+            registeredProject={registeredProject}
+            result={analysisResult}
+            onResultChange={setAnalysisResult}
+            onAnalysisErrorChange={setAnalysisError}
+            onNavigateToProject={() => setPage('project')}
+          />
         )}
         {page === 'settings' && <Settings />}
-        {page === 'profile' && <Profile />}
       </main>
 
       <footer className="app-footer">

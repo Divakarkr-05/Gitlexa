@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { ArrowRight, CheckCircle2, CircleAlert, Github, Layers3, Plus, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, CircleAlert, Github, Layers3, Plus } from 'lucide-react';
 import { ApiError } from '../services/api';
 import { createProject } from '../services/projects';
 import type { ProjectResponse } from '../types';
@@ -40,24 +40,32 @@ export default function Project({ registeredProject, onProjectRegistered }: Proj
     <div className="page-shell inner-page">
       <div className="page-breadcrumb"><span>WORKSPACE</span><i>/</i><strong>PROJECT</strong></div>
       <section className="inner-page-heading">
-        <div><div className="eyebrow"><span className="eyebrow-line" /> REPOSITORY PROFILE</div><h1>Project <span>space.</span></h1><p>Register a repository with the backend to queue an analysis.</p></div>
+        <div><div className="eyebrow"><span className="eyebrow-line" /> REPOSITORY PROFILE</div><h1>Project <span>space.</span></h1><p>Register a repository with the backend, then retrieve live GitHub analysis.</p></div>
         <span className="outline-chip"><Layers3 size={13} /> BACKEND PROJECTS</span>
       </section>
 
       <div className="project-content-grid">
         <section className="panel project-profile-panel">
-          <div className="panel-kicker"><span className="panel-kicker-line" /> DEMO REPOSITORY</div>
-          <div className="project-profile">
-            <span className="project-profile-icon"><Github size={22} /></span>
-            <div><h2>northstar / platform-api</h2><p>Sample repository · Not connected to GitHub</p></div>
-            <span className="demo-tag">DEMO</span>
-          </div>
-          <div className="project-profile-facts">
-            <div><span>PRIMARY BRANCH</span><strong><i className="language-dot" /> main</strong></div>
-            <div><span>LANGUAGE</span><strong><i className="language-dot" /> TypeScript</strong></div>
-            <div><span>TELEMETRY</span><strong><CircleAlert size={14} /> Sample only</strong></div>
-          </div>
-          <div className="project-callout"><ShieldCheck size={15} /><p>Live repository telemetry is unavailable because this frontend has no verified telemetry read endpoint.</p></div>
+          <div className="panel-kicker"><span className="panel-kicker-line" /> REGISTERED PROJECT</div>
+          {registeredProject ? (
+            <>
+              <div className="project-profile">
+                <span className="project-profile-icon"><Github size={22} /></span>
+                <div><h2>{registeredProject.name}</h2><p>Registered with the Gitlexa backend</p></div>
+              </div>
+              <div className="registered-project">
+                <a href={registeredProject.repo_url} target="_blank" rel="noreferrer">{registeredProject.repo_url}</a>
+                <code>Project ID: {registeredProject.id}</code>
+              </div>
+              <p className="registration-note">Registration stores the project in backend memory. Repository metadata is verified only after a successful live analysis.</p>
+            </>
+          ) : (
+            <div className="analysis-empty-state">
+              <span className="empty-state-icon"><Github size={20} /></span>
+              <h2>No project registered</h2>
+              <p>Use the form to register the GitHub repository you want to analyze.</p>
+            </div>
+          )}
         </section>
 
         <section className="panel registration-panel">
