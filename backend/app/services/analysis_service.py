@@ -153,6 +153,8 @@ class AnalysisService:
                 f"{GITHUB_API_BASE}/repos/{owner}/{repository}",
                 required=True,
             )
+            if not isinstance(metadata_payload, dict):
+                raise GitHubAnalysisError(502, "GitHub returned invalid repository metadata.")
             metadata = self._repository_metadata(metadata_payload)
             repository_name = str(metadata_payload["full_name"])
             availability: dict[str, str] = {
