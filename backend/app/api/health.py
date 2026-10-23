@@ -1,7 +1,11 @@
 from fastapi import APIRouter
 
+from app.schemas.common import HealthResponse
+
 router = APIRouter()
 
-@router.get("")
-async def get_health():
-    return {"status": "healthy", "service": "gitlexa-backend"}
+
+@router.get("", response_model=HealthResponse)
+async def get_health() -> HealthResponse:
+    """Report API process liveness without asserting dependency connectivity."""
+    return HealthResponse(status="healthy", service="gitlexa-backend")
