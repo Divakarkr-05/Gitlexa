@@ -273,8 +273,10 @@ class GitHubPullRequests:
         user_info = pr.get("user")
         author = user_info.get("login") if isinstance(user_info, dict) else None
 
-        head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
-        base = pr.get("base") if isinstance(pr.get("base"), dict) else {}
+        raw_head = pr.get("head")
+        head: Dict[str, Any] = raw_head if isinstance(raw_head, dict) else {}
+        raw_base = pr.get("base")
+        base: Dict[str, Any] = raw_base if isinstance(raw_base, dict) else {}
 
         head_ref = head.get("ref")
         head_sha = head.get("sha")

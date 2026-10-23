@@ -107,7 +107,8 @@ class GitHubCodeSearch:
                     if fragment and fragment not in snippets:
                         snippets.append(fragment)
 
-        repo_info = item.get("repository") if isinstance(item.get("repository"), dict) else {}
+        raw_repo = item.get("repository")
+        repo_info: Dict[str, Any] = raw_repo if isinstance(raw_repo, dict) else {}
         repo_name = repo_info.get("full_name") or repo_info.get("name")
 
         return {
