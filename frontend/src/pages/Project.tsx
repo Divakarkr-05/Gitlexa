@@ -1,6 +1,6 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { ArrowRight, CheckCircle2, CircleAlert, Github, Layers3, Plus } from 'lucide-react';
-import { ApiError } from '../services/api';
+import { API_BASE_URL, ApiError } from '../services/api';
 import { createProject } from '../services/projects';
 import type { ProjectResponse } from '../types';
 
@@ -16,6 +16,56 @@ export default function Project({ registeredProject, onProjectRegistered }: Proj
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [githubNotice, setGithubNotice] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [, setActiveInstallationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const statusUrl = API_BASE_URL.endsWith('/api/v1')
+      ? `${API_BASE_URL}/github/status`
+      : `${API_BASE_URL}/api/v1/github/status`;
+
+    fetch(statusUrl, { headers: { Accept: 'application/json' } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted || !data) return;
+        const search = new URLSearchParams(window.location.search);
+        const urlId = search.get('installation_id');
+        const isAppConfigured = Boolean(data.app_configured);
+        const resolvedId =
+          data.installation_id ||
+          (data.active_installations && data.active_installations[0]) ||
+          urlId;
+
+        if (isAppConfigured && resolvedId) {
+          setIsConnected(true);
+          setActiveInstallationId(String(resolvedId));
+          setGithubNotice(`GitHub App connected (Installation ID: ${resolvedId})`);
+        } else if (search.get('github') === 'connected') {
+          setIsConnected(true);
+          if (resolvedId) {
+            setActiveInstallationId(String(resolvedId));
+            setGithubNotice(`GitHub App connected (Installation ID: ${resolvedId})`);
+          } else {
+            setGithubNotice('GitHub App connected');
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback safely if offline
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleConnectGitHub = () => {
+    const installEndpoint = API_BASE_URL.endsWith('/api/v1')
+      ? `${API_BASE_URL}/github/install`
+      : `${API_BASE_URL}/api/v1/github/install`;
+    window.location.href = installEndpoint;
+  };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,9 +107,9 @@ export default function Project({ registeredProject, onProjectRegistered }: Proj
               <button
                 type="button"
                 className="secondary-button"
-                onClick={() => setGithubNotice('GitHub App connection will be configured through the backend service.')}
+                onClick={handleConnectGitHub}
               >
-                <Github size={15} /> Connect GitHub
+                <Github size={15} /> {isConnected ? 'Reconnect GitHub' : 'Connect GitHub'}
               </button>
             </div>
             {githubNotice && (

@@ -29,7 +29,19 @@ const navigation: { id: Page; label: string; icon: typeof LayoutDashboard }[] = 
 ];
 
 export default function App() {
-  const [page, setPage] = useState<Page>('dashboard');
+  const [page, setPage] = useState<Page>(() => {
+    if (typeof window !== 'undefined') {
+      const search = new URLSearchParams(window.location.search);
+      if (
+        window.location.pathname.includes('project') ||
+        search.get('page') === 'project' ||
+        search.has('github')
+      ) {
+        return 'project';
+      }
+    }
+    return 'dashboard';
+  });
   const [hasAuthenticatedSession, setHasAuthenticatedSession] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
