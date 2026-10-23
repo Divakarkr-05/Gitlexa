@@ -48,11 +48,14 @@ async def test_github_setup_valid_installation_id():
     """Verify GET /api/v1/github/setup accepts valid installation_id and registers connection safely."""
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        # Mock get_installation_details to avoid live network during isolated unit test
-        with patch.object(
-            github_app_auth,
-            "get_installation_details",
-            return_value={"id": 174573260, "account": {"login": "Divakarkr-05", "type": "User"}},
+        # Mock is_configured and get_installation_details to ensure test runs hermetically on CI runners
+        with (
+            patch.object(type(github_app_auth), "is_configured", property(lambda self: True)),
+            patch.object(
+                github_app_auth,
+                "get_installation_details",
+                return_value={"id": 174573260, "account": {"login": "Divakarkr-05", "type": "User"}},
+            ),
         ):
             response = await client.get(
                 "/api/v1/github/setup?installation_id=174573260&setup_action=install",
@@ -105,10 +108,13 @@ async def test_github_setup_browser_html_response():
     """Verify GET /api/v1/github/setup returns HTML confirmation with redirect to frontend."""
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        with patch.object(
-            github_app_auth,
-            "get_installation_details",
-            return_value={"id": 174573260, "account": {"login": "Divakarkr-05", "type": "User"}},
+        with (
+            patch.object(type(github_app_auth), "is_configured", property(lambda self: True)),
+            patch.object(
+                github_app_auth,
+                "get_installation_details",
+                return_value={"id": 174573260, "account": {"login": "Divakarkr-05", "type": "User"}},
+            ),
         ):
             response = await client.get(
                 "/api/v1/github/setup?installation_id=174573260&setup_action=install",
@@ -135,3 +141,21 @@ async def test_github_status_endpoint():
         assert "private_key" not in data
         assert "client_secret" not in data
         assert "token" not in data
+
+
+@pytest.mark.anyio
+async def test_github_setup_when_not_configured():
+    """Verify setup succeeds safely even in environments without App private key configured (e.g. CI)."""
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        with patch.object(type(github_app_auth), "is_configured", property(lambda self: False)):
+            response = await client.get(
+                "/api/v1/github/setup?installation_id=174573260&setup_action=install",
+                headers={"Accept": "application/json"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
+            assert data["installation_id"] == 174573260
+            assert data["account_login"] is None
+            assert github_app_auth.default_installation_id == 174573260
