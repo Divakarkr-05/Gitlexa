@@ -72,19 +72,22 @@ class GitHubClient:
         api_version: str = DEFAULT_API_VERSION,
         timeout: float = 30.0,
         client: Optional[httpx.AsyncClient] = None,
+        installation_id: Optional[int] = None,
     ) -> None:
         """Initialize GitHub client.
 
         Args:
-            token: Optional GitHub personal access token or OAuth token.
+            token: Optional GitHub personal access token, OAuth token, or installation token.
                    Defaults to settings.get_github_token_value().
             base_url: GitHub API base URL (default https://api.github.com).
             api_version: GitHub REST API version header (default 2022-11-28).
             timeout: Request timeout in seconds.
             client: Optional pre-configured httpx.AsyncClient (e.g. for testing or pooling).
+            installation_id: Optional GitHub App installation ID.
         """
         raw_token = token if token is not None else settings.get_github_token_value()
         self.token: Optional[str] = raw_token if raw_token else None
+        self.installation_id: Optional[int] = installation_id or settings.GITHUB_INSTALLATION_ID
         self.base_url: str = base_url.rstrip("/")
         self.api_version: str = api_version
         self.timeout: float = timeout
@@ -93,6 +96,29 @@ class GitHubClient:
         self._client: Optional[httpx.AsyncClient] = client
         self._etag_cache: Dict[str, GitHubCacheEntry] = {}
         self.rate_limit_info: RateLimitInfo = RateLimitInfo()
+
+    async def get_token(self) -> Optional[str]:
+        """Resolve current active bearer token, fetching or refreshing App installation token if needed."""
+        if self.token:
+            return self.token
+
+        from app.github.app_auth import github_app_auth
+        if github_app_auth.is_configured:
+            try:
+                inst_id = self.installation_id or github_app_auth.default_installation_id
+                if inst_id:
+                    return await github_app_auth.get_installation_token(installation_id=inst_id)
+            except Exception as exc:
+                logger.debug("Could not resolve GitHub App installation token: %s", exc)
+
+        return settings.get_github_token_value()
+
+    @classmethod
+    async def for_installation(cls, installation_id: int) -> "GitHubClient":
+        """Factory to create a GitHubClient authenticated for a specific installation."""
+        from app.github.app_auth import github_app_auth
+        token = await github_app_auth.get_installation_token(installation_id=installation_id)
+        return cls(token=token, installation_id=installation_id)
 
     def _ensure_client(self) -> httpx.AsyncClient:
         """Ensure an active httpx.AsyncClient is available."""
@@ -122,15 +148,20 @@ class GitHubClient:
         """Clear all in-memory ETag conditional cache entries."""
         self._etag_cache.clear()
 
-    def _build_headers(self, custom_headers: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    def _build_headers(
+        self,
+        custom_headers: Optional[Dict[str, str]] = None,
+        token: Optional[str] = None,
+    ) -> Dict[str, str]:
         """Construct standard GitHub REST API headers."""
         headers: Dict[str, str] = {
             "Accept": self.DEFAULT_ACCEPT,
             "X-GitHub-Api-Version": self.api_version,
             "User-Agent": self.DEFAULT_USER_AGENT,
         }
-        if self.token:
-            headers["Authorization"] = f"Bearer {self.token}"
+        auth_token = token or self.token
+        if auth_token:
+            headers["Authorization"] = f"Bearer {auth_token}"
 
         if custom_headers:
             headers.update(custom_headers)
@@ -266,7 +297,8 @@ class GitHubClient:
         """
         client = self._ensure_client()
         url = self._resolve_url(endpoint)
-        request_headers = self._build_headers(headers)
+        active_token = await self.get_token()
+        request_headers = self._build_headers(headers, token=active_token)
         cache_key = self._build_cache_key(url, params)
 
         is_get = method.upper() == "GET"

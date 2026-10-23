@@ -17,7 +17,11 @@ from app.core.exceptions import (
 )
 from app.core.logging import logger
 from app.github.client import GitHubClient
+from app.mcp.tools.get_blocker_diagnosis import get_blocker_diagnosis
+from app.mcp.tools.get_project_status import get_project_status
 from app.mcp.tools.get_pull_request import get_pull_request
+from app.mcp.tools.get_recovery_plan import get_recovery_plan
+from app.mcp.tools.investigate_repository import investigate_repository
 from app.mcp.tools.list_issues import list_issues
 from app.mcp.tools.read_ci_status import read_ci_status
 from app.mcp.tools.search_code import search_code
@@ -149,6 +153,26 @@ def create_mcp_server(client: Optional[GitHubClient] = None) -> MCPServer:
             kw["client"] = client
         return await search_code(**kw)
 
+    async def _investigate_repository(**kw: Any) -> Any:
+        if "client" not in kw and client is not None:
+            kw["client"] = client
+        return await investigate_repository(**kw)
+
+    async def _get_project_status(**kw: Any) -> Any:
+        if "client" not in kw and client is not None:
+            kw["client"] = client
+        return await get_project_status(**kw)
+
+    async def _get_blocker_diagnosis(**kw: Any) -> Any:
+        if "client" not in kw and client is not None:
+            kw["client"] = client
+        return await get_blocker_diagnosis(**kw)
+
+    async def _get_recovery_plan(**kw: Any) -> Any:
+        if "client" not in kw and client is not None:
+            kw["client"] = client
+        return await get_recovery_plan(**kw)
+
     server.register_tool(
         name="list_issues",
         func=_list_issues,
@@ -196,6 +220,46 @@ def create_mcp_server(client: Optional[GitHubClient] = None) -> MCPServer:
             "extension": "str (optional): file extension filter",
             "filename": "str (optional): filename filter",
             "limit": "int (optional): max results (1-100)",
+        },
+    )
+
+    server.register_tool(
+        name="investigate_repository",
+        func=_investigate_repository,
+        description="Gathers comprehensive repository telemetry (issues, PRs, commits, CI) into evidence.",
+        parameters={
+            "owner": "str (optional): repository owner or organization",
+            "repo": "str (required): repository name or 'owner/repo'",
+        },
+    )
+
+    server.register_tool(
+        name="get_project_status",
+        func=_get_project_status,
+        description="Determines project health status (healthy, warning, blocked, unknown) based on actual evidence.",
+        parameters={
+            "owner": "str (optional): repository owner or organization",
+            "repo": "str (required): repository name or 'owner/repo'",
+        },
+    )
+
+    server.register_tool(
+        name="get_blocker_diagnosis",
+        func=_get_blocker_diagnosis,
+        description="Diagnoses repository blockers using the Evidence Engine with confidence scoring.",
+        parameters={
+            "owner": "str (optional): repository owner or organization",
+            "repo": "str (required): repository name or 'owner/repo'",
+        },
+    )
+
+    server.register_tool(
+        name="get_recovery_plan",
+        func=_get_recovery_plan,
+        description="Generates an evidence-grounded, read-only recovery recommendation plan.",
+        parameters={
+            "owner": "str (optional): repository owner or organization",
+            "repo": "str (required): repository name or 'owner/repo'",
         },
     )
 

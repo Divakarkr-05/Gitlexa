@@ -43,7 +43,11 @@ def test_mcp_server_registration_and_discovery():
     assert "get_pull_request" in tool_names
     assert "read_ci_status" in tool_names
     assert "search_code" in tool_names
-    assert len(tool_names) == 4
+    assert "investigate_repository" in tool_names
+    assert "get_project_status" in tool_names
+    assert "get_blocker_diagnosis" in tool_names
+    assert "get_recovery_plan" in tool_names
+    assert len(tool_names) == 8
 
 
 @pytest.mark.anyio

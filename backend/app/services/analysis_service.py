@@ -8,6 +8,7 @@ from uuid import UUID
 import httpx
 
 from app.core.config import settings
+from app.core.logging import logger
 from app.evidence.blocker_detection import BlockerDetector
 from app.evidence.github_adapter import GitHubEvidenceAdapter
 from app.evidence.schemas import Evidence
@@ -138,6 +139,14 @@ class AnalysisService:
     ) -> AnalysisResponse:
         owner, repository = self._repository_coordinates(project.repo_url)
         token = settings.get_github_token_value()
+        if not token:
+            from app.github.app_auth import github_app_auth
+            if github_app_auth.is_configured:
+                try:
+                    token = await github_app_auth.get_installation_token()
+                except Exception as exc:
+                    logger.debug("Could not resolve GitHub App token for analysis: %s", exc)
+
         headers = dict(GITHUB_API_HEADERS)
         if token and token.strip():
             headers["Authorization"] = "Bearer " + token.strip()

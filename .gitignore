@@ -21,3 +21,9 @@ Thumbs.db
 
 # Docker
 *.local
+
+# Secrets & Private Keys
+*.pem
+*.key
+*.pkcs8
+secrets/

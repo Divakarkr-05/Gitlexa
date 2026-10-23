@@ -65,18 +65,21 @@ class BlockerDetector:
 
         metadata = evidence.metadata
 
-        status = str(
-            metadata.get("status")
-            or metadata.get("conclusion")
-            or metadata.get("state")
-            or ""
-        ).lower()
+        conclusion = str(metadata.get("conclusion") or "").lower()
+        status = str(metadata.get("status") or "").lower()
+        state = str(metadata.get("state") or "").lower()
 
-        return status in {
+        failed_states = {
             "failure",
             "failed",
-            "failure",
             "cancelled",
             "timed_out",
             "error",
-        }# Blocker Detection algorithms
+        }
+
+        return (
+            conclusion in failed_states
+            or status in failed_states
+            or state in failed_states
+            or metadata.get("has_blockers") is True
+        )
